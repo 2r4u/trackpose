@@ -95,31 +95,27 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             
             
             
-            # Visualize angle
-            """cv2.putText(image, str(angle), 
-                           tuple(np.multiply(elbow, [640, 480]).astype(int)), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
-                                )"""
+            # Visualize angle in top left corner
+            cv2.putText(image, "rknee: "+str(r_angle_knee), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(image, "lknee: "+str(l_angle_knee), (50,70), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
 
-            cv2.putText(image, str(r_angle_knee), 
-                           tuple(np.multiply(r_knee, [630,900]).astype(int)), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,9,0), 2, cv2.LINE_AA
-                                )
-
-            cv2.putText(image, str(l_angle_knee), 
-                           tuple(np.multiply(l_knee, [630,900]).astype(int)), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,9,0), 2, cv2.LINE_AA
-                                )
+            cv2.putText(image, "rhip: "+str(r_angle_hip), (50,100), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(image, "lhip: "+str(l_angle_hip), (50,120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
             
-            cv2.putText(image, str(r_angle_hip), 
-                           tuple(np.multiply(r_hip, [630,900]).astype(int)), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2, cv2.LINE_AA
-                                )
+            #vizualize angle on body
+            #cv2.putText(image, str(r_angle_knee),tuple(np.multiply(r_knee, [630,900]).astype(int)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,9,0), 2, cv2.LINE_AA)
+                                
 
-            cv2.putText(image, str(l_angle_hip), 
-                           tuple(np.multiply(l_hip, [630,900]).astype(int)), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2, cv2.LINE_AA
-                                )
+           
+
+            #cv2.putText(image, str(l_angle_knee),tuple(np.multiply(l_knee, [630,900]).astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,9,0), 2, cv2.LINE_AA)
+                                
+            
+            #cv2.putText(image, str(r_angle_hip),tuple(np.multiply(r_hip, [630,900]).astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2, cv2.LINE_AA)
+                                
+
+            #cv2.putText(image, str(l_angle_hip), tuple(np.multiply(l_hip, [630,900]).astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2, cv2.LINE_AA)
+                                
 
             
         except:
@@ -133,13 +129,14 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         
         out.write(rescale_frame(image,100))
         cv2.imshow('Mediapipe Feed', image)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            cap.release()
-            out.release()
-            cv2.destroyAllWindows()
-            #break
-
+        if ret:
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                cap.release()
+                out.release()
+                cv2.destroyAllWindows()
+                break
+        else:
+            break
     cap.release()
     out.release()
     cv2.destroyAllWindows()
