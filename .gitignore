@@ -1,2 +1,4 @@
-data/models/*
+data/models
 data/images
+data/proto
+readPose.py

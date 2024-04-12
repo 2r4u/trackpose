@@ -19,7 +19,7 @@ def calculate_angle(a,b,c):
         
     return angle
 
-def rescale_frame(frame, percent=50):
+def rescale_frame(frame, percent):
     width = int(frame.shape[1] * percent/ 100)
     height = int(frame.shape[0] * percent/ 100)
     dim = (width, height)
@@ -30,28 +30,20 @@ angle_min = []
 angle_min_hip = []
 
 cap = cv2.VideoCapture("./data/images/anthony-tj.mp4")
-# Curl counter variables
-counter = 0 
-min_ang = 0
-max_ang = 0
-min_ang_hip = 0
-max_ang_hip = 0
-stage = None
 
 
 
 
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
-size = (640, 480)
+w = cap.get(cv2.CAP_PROP_FRAME_WIDTH) *0.55;
+h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)*0.55; 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter('./data/results/output_video_.mp4', fourcc, 24, size)
+out = cv2.VideoWriter('./data/results/output.mp4',fourcc, 24, (int(w),int(h)))
 
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
     while cap.isOpened():
         ret, frame = cap.read()
         if frame is not None:
-            frame_ = rescale_frame(frame, percent=55)
+            frame_ = rescale_frame(frame, 55)
         
         # Recolor image to RGB
         image = cv2.cvtColor(frame_, cv2.COLOR_BGR2RGB)
@@ -139,7 +131,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
                                 mp_drawing.DrawingSpec(color=(0,255,0), thickness=2, circle_radius=1) 
                                  )               
         
-        out.write(image)
+        out.write(rescale_frame(image,100))
         cv2.imshow('Mediapipe Feed', image)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
