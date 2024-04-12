@@ -39,7 +39,7 @@ start_t = time.time()
 out = net.forward()
     
 print("time is ", time.time()-start_t)
-Name = "Human Pose Estimation"
+Name = "Pose"
 cv.namedWindow(Name, cv.WINDOW_AUTOSIZE)
 
 points = []
