@@ -2,3 +2,4 @@ data/models
 data/images
 data/proto
 readPose.py
+lmdata.txt

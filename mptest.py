@@ -2,6 +2,7 @@ import cv2
 from cv2 import destroyAllWindows
 import mediapipe as mp
 import numpy as np
+import os
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
@@ -26,9 +27,8 @@ def rescale_frame(frame, percent):
     return cv2.resize(frame, dim, interpolation =cv2.INTER_AREA)
 
 
-angle_min = []
-angle_min_hip = []
-
+angle_min = 0.0
+stride_frame=0
 cap = cv2.VideoCapture("./data/images/anthony-tj.mp4")
 
 
@@ -39,8 +39,11 @@ h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)*0.55;
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter('./data/results/output.mp4',fourcc, 24, (int(w),int(h)))
 
+#datafile="./data/lmdata.txt"
+frames=0
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
     while cap.isOpened():
+        frames+=1
         ret, frame = cap.read()
         if frame is not None:
             frame_ = rescale_frame(frame, 55)
@@ -59,6 +62,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         # Extract landmarks
         try:
             landmarks = results.pose_landmarks.landmark
+           
             
             # format: (bodypart) = [landmarks[mp_pose.PoseLandmark.(BODY_PART).value].x,landmarks[mp_pose.PoseLandmark.(BODY_PART).value].y]
             
@@ -87,6 +91,10 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
 
             l_angle_knee = calculate_angle(l_hip, l_knee, l_ankle) #Knee joint angle
             l_angle_knee = round(l_angle_knee,2)
+            
+            #check if this frame is max leg extension (stride sync)
+            if r_angle_hip+r_angle_knee>angle_min:
+                stride_frame=frames
    
             #r_hip_angle = 180-r_angle_hip
             #l_hip_angle = 180-l_angle_hip
@@ -139,4 +147,6 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             break
     cap.release()
     out.release()
+    #put sync frame in filename
+    os.rename('./data/results/output.mp4',f'./data/results/output-{stride_frame}.mp4')
     cv2.destroyAllWindows()
