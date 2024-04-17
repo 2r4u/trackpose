@@ -1,7 +1,8 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import ffmpeg, subprocess
+import subprocess
+from pandas import DataFrame
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
@@ -29,23 +30,26 @@ def get_length(input_video):
     result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', input_video], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return float(result.stdout)
 
-angle_min = 0.0
-stride_frame=0
-cap = cv2.VideoCapture("./data/images/anthony-tj.mp4")
+
+cap = cv2.VideoCapture("./data/images/antho-jog.mp4")
 
 
 
 outfile='./data/results/output.mp4'
+fps = cap.get(cv2.CAP_PROP_FPS)
 w = cap.get(cv2.CAP_PROP_FRAME_WIDTH) *0.55;
 h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)*0.55; 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-#TODO make fps adapt to input fps
-out = cv2.VideoWriter(outfile,fourcc, 30, (int(w),int(h)))
+out = cv2.VideoWriter(outfile,fourcc, fps, (int(w),int(h)))
 
-frames=0
+#todo record per frame angles in dataframe
+usr_angles={'r_hip':[],'l_hip':[],'r_knee':[],'l_knee':[]}
+
+
+
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
     while cap.isOpened():
-        frames+=1
+        
         ret, frame = cap.read()
         if frame is not None:
             frame_ = rescale_frame(frame, 55)
@@ -63,8 +67,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
 
         # Extract landmarks
         try:
-            landmarks = results.pose_landmarks.landmark
-           
+            landmarks = results.pose_landmarks.landmark 
             
             # format: (bodypart) = [landmarks[mp_pose.PoseLandmark.(BODY_PART).value].x,landmarks[mp_pose.PoseLandmark.(BODY_PART).value].y]
             
@@ -81,8 +84,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             l_hip = [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x,landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
             l_knee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x,landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
             l_ankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
-            
-           
+               
             
             # Calculate angles
             r_angle_hip = calculate_angle(r_shoulder, r_hip, r_knee)
@@ -95,9 +97,13 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             l_angle_knee = round(l_angle_knee,2)
             
             #check if this frame is max leg extension (stride sync)
-            if r_angle_hip+r_angle_knee>angle_min:
-                stride_frame=frames
-   
+            #leg_frames.append(max([r_angle_knee+r_angle_hip,l_angle_hip+l_angle_knee]))
+            #add angles to dictionary
+            usr_angles['r_hip'].append(r_angle_hip)
+            usr_angles['l_hip'].append(l_angle_hip)
+            usr_angles['r_knee'].append(r_angle_knee)
+            usr_angles['l_knee'].append(l_angle_knee)
+
             #r_hip_angle = 180-r_angle_hip
             #l_hip_angle = 180-l_angle_hip
             #r_knee_angle = 180-r_angle_knee
@@ -113,10 +119,9 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             cv2.putText(image, "lhip: "+str(l_angle_hip), (50,120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
             
             #vizualize angle on body
-            #cv2.putText(image, str(r_angle_knee),tuple(np.multiply(r_knee, [630,900]).astype(int)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,9,0), 2, cv2.LINE_AA)
+            #cv2.putText(image, str(r_angle_knee),tuple(np.multiply(r_knee, [630,900]).astype(int)),cv2.FON:T_HERSHEY_SIMPLEX, 0.5, (255,9,0), 2, cv2.LINE_AA)
                                 
 
-           
 
             #cv2.putText(image, str(l_angle_knee),tuple(np.multiply(l_knee, [630,900]).astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,9,0), 2, cv2.LINE_AA)
                                 
@@ -144,9 +149,10 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             break 
     cap.release()
     out.release()
-    
-#cut video down to sync stride
-input_file = ffmpeg.input(outfile)
-#TODO: change output name, add some dating/diff system
-output_file = ffmpeg.output(input_file.trim(start_frame=stride_frame, end_frame=30*get_length(outfile)), f'{outfile[:len(outfile)-4]}-trimmed.mp4')
-ffmpeg.run(output_file)
+
+
+
+#save in dataframe, crop to video, save as csv (for comparison)
+df=DataFrame(usr_angles, columns=['r_hip','l_hip','r_knee','l_knee'])
+#df.drop(df.index[:stride_frame], inplace = True) 
+df.to_csv('./data/out.csv', index=False)
