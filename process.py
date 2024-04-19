@@ -1,7 +1,6 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import subprocess
 from pandas import DataFrame
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -26,12 +25,7 @@ def rescale_frame(frame, percent):
     dim = (width, height)
     return cv2.resize(frame, dim, interpolation =cv2.INTER_AREA)
 
-def get_length(input_video):
-    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', input_video], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return float(result.stdout)
-
-
-cap = cv2.VideoCapture("./data/images/antho-jog.mp4")
+cap = cv2.VideoCapture("./data/images/prith-jog.mp4")
 
 
 
@@ -42,18 +36,16 @@ h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)*0.55;
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter(outfile,fourcc, fps, (int(w),int(h)))
 
-#todo record per frame angles in dataframe
 usr_angles={'r_hip':[],'l_hip':[],'r_knee':[],'l_knee':[]}
 
-
-
+count=0
+start=False
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
     while cap.isOpened():
         
         ret, frame = cap.read()
         if frame is not None:
             frame_ = rescale_frame(frame, 55)
-        
         # Recolor image to RGB
         image = cv2.cvtColor(frame_, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
@@ -99,10 +91,10 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             #check if this frame is max leg extension (stride sync)
             #leg_frames.append(max([r_angle_knee+r_angle_hip,l_angle_hip+l_angle_knee]))
             #add angles to dictionary
-            usr_angles['r_hip'].append(r_angle_hip)
-            usr_angles['l_hip'].append(l_angle_hip)
-            usr_angles['r_knee'].append(r_angle_knee)
-            usr_angles['l_knee'].append(l_angle_knee)
+            #usr_angles['r_hip'].append(r_angle_hip)
+            #usr_angles['l_hip'].append(l_angle_hip)
+            #usr_angles['r_knee'].append(r_angle_knee)
+            #usr_angles['l_knee'].append(l_angle_knee)
 
             #r_hip_angle = 180-r_angle_hip
             #l_hip_angle = 180-l_angle_hip
@@ -130,29 +122,32 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
                                 
 
             #cv2.putText(image, str(l_angle_hip), tuple(np.multiply(l_hip, [630,900]).astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2, cv2.LINE_AA)
-                                
 
-            
+            # Render detections
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=1),mp_drawing.DrawingSpec(color=(0,255,0), thickness=2, circle_radius=1))
+                                
+            #if abs(r_angle_hip - l_angle_hip)<=2:
+             #   count+=1
+              #  cv2.imwrite(f'./data/results/cp-{count}.jpg',rescale_frame(image,100))
+            # crop video to fit csv
+            #if start==False:
+                #start=True
+                #start_frame=count
+            out.write(rescale_frame(image,100))
+
         except:
             pass
-        
-        # Render detections
-        mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-                                mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=1), 
-                                mp_drawing.DrawingSpec(color=(0,255,0), thickness=2, circle_radius=1) 
-                                 )               
-        
-        out.write(rescale_frame(image,100))
+            #count+=1        
+                
         if ret:
             pass
         else:
             break 
     cap.release()
     out.release()
-
+    
 
 
 #save in dataframe, crop to video, save as csv (for comparison)
 df=DataFrame(usr_angles, columns=['r_hip','l_hip','r_knee','l_knee'])
-#df.drop(df.index[:stride_frame], inplace = True) 
 df.to_csv('./data/out.csv', index=False)
