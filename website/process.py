@@ -1,8 +1,6 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-from pandas import DataFrame
-
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
@@ -34,11 +32,11 @@ def rescale_frame(frame, percent):
 def process(source):
   cap = cv2.VideoCapture(source)
   
-  OUTPUT_FILE = './results/output.mp4'
+  OUTPUT_FILE = './results/output.webm'
   fps = cap.get(cv2.CAP_PROP_FPS)
   w = cap.get(cv2.CAP_PROP_FRAME_WIDTH) * 0.55
   h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT) * 0.55
-  fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+  fourcc = cv2.VideoWriter_fourcc(*'VP80')
   out = cv2.VideoWriter(OUTPUT_FILE, fourcc, fps, (int(w), int(h)))
   
   usr_angles = {
@@ -50,8 +48,7 @@ def process(source):
       'l_foot': []
   }
   
-  count = 0
-  start = False
+  
   with mp_pose.Pose(min_detection_confidence=0.5,
                     min_tracking_confidence=0.5) as pose:
     while cap.isOpened():
