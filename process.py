@@ -36,7 +36,7 @@ h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)*0.55;
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter(outfile,fourcc, fps, (int(w),int(h)))
 
-usr_angles={'r_hip':[],'l_hip':[],'r_knee':[],'l_knee':[]}
+usr_angles={'r_hip':[],'l_hip':[],'r_knee':[],'l_knee':[],'r_foot':[],'l_foot':[]}
 
 count=0
 start=False
@@ -91,10 +91,12 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             #check if this frame is max leg extension (stride sync)
             #leg_frames.append(max([r_angle_knee+r_angle_hip,l_angle_hip+l_angle_knee]))
             #add angles to dictionary
-            #usr_angles['r_hip'].append(r_angle_hip)
-            #usr_angles['l_hip'].append(l_angle_hip)
-            #usr_angles['r_knee'].append(r_angle_knee)
-            #usr_angles['l_knee'].append(l_angle_knee)
+            usr_angles['r_hip'].append(r_angle_hip)
+            usr_angles['l_hip'].append(l_angle_hip)
+            usr_angles['r_knee'].append(r_angle_knee)
+            usr_angles['l_knee'].append(l_angle_knee)
+            usr_angles['r_foot'].append([landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].y])
+            usr_angles['l_foot'].append([landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].x,landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].y])
 
             #r_hip_angle = 180-r_angle_hip
             #l_hip_angle = 180-l_angle_hip
@@ -110,6 +112,8 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
             cv2.putText(image, "rhip: "+str(r_angle_hip), (50,100), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
             cv2.putText(image, "lhip: "+str(l_angle_hip), (50,120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1, cv2.LINE_AA)
             
+            #TODO integrate code with flask page, create function to send feedback in feed on page
+
             #vizualize angle on body
             #cv2.putText(image, str(r_angle_knee),tuple(np.multiply(r_knee, [630,900]).astype(int)),cv2.FON:T_HERSHEY_SIMPLEX, 0.5, (255,9,0), 2, cv2.LINE_AA)
                                 
@@ -149,5 +153,5 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
 
 
 #save in dataframe, crop to video, save as csv (for comparison)
-df=DataFrame(usr_angles, columns=['r_hip','l_hip','r_knee','l_knee'])
-df.to_csv('./data/out.csv', index=False)
+#df=DataFrame(usr_angles)
+#df.to_csv('./data/out.csv', index=False)
