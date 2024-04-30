@@ -2,6 +2,44 @@
 <html>
 <head>
   <title>Video Example</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {packages: ['corechart', 'line']});
+      google.charts.setOnLoadCallback(getJSON().then(function(value) {drawBasic(value);}));
+      
+      async function getJSON(){
+        const response = await fetch("../data.json");
+        const json = await response.json();
+        return json
+      }
+      function drawBasic(json) {
+        
+        var data = new google.visualization.DataTable();
+        data.addColumn('number', 'X');
+        data.addColumn('number', 'r_elbow');
+        data.addColumn('number', 'l_elbow');
+        data.addColumn('number', 'r_knee');
+        data.addColumn('number', 'l_knee');
+        data.addColumn('number', 'r_foot');
+        data.addColumn('number', 'l_foot');
+        data.addColumn('number', 'r_heel');
+        data.addColumn('number', 'l_heel');
+        data.addRows(json);
+
+        var options = {
+          hAxis: {
+            title: 'Time'
+          },
+          vAxis: {
+            title: ''
+          }
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+
+        chart.draw(data, options);
+      }
+    </script>
 </head>
 <body>
   <h2>Serving video files from Flask template</h2>
@@ -9,6 +47,7 @@
     <source src={{ url_for('static', filename="output.webm") }} type="video/mp4">
     Your browser does not support the video tag.
   </video>
+  <div id="chart_div"></div>
 </body>
 </html>
 

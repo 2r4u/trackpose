@@ -2,7 +2,7 @@ import cv2, json
 import mediapipe as mp
 import numpy as np
 from ast import literal_eval
-from pandas import DataFrame
+import pandas as pd
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
@@ -215,8 +215,10 @@ def process(source):
         out.release()
       
     #save in dataframe, crop to video, save as csv (for comparison)
-    df=DataFrame(usr_angles)
+    df=pd.DataFrame(usr_angles)
+    idx_col=[i for i in range(len(df))]
+    df.insert(0, 'index', pd.Series(idx_col))
     data=df.to_json(orient='values')
     
-    with open('data.json', 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    with open('data.json', 'w') as f:
+        json.dump(data, f)
