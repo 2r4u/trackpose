@@ -3,51 +3,43 @@
 <head>
   <title>Video Example</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-      google.charts.load('current', {packages: ['corechart', 'line']});
-      google.charts.setOnLoadCallback(getJSON().then(function(value) {drawBasic(value);}));
-      
-      async function getJSON(){
-        const response = await fetch("../data.json");
-        const json = await response.json();
-        return json
-      }
-      function drawBasic(json) {
-        
-        var data = new google.visualization.DataTable();
-        data.addColumn('number', 'X');
-        data.addColumn('number', 'r_elbow');
-        data.addColumn('number', 'l_elbow');
-        data.addColumn('number', 'r_knee');
-        data.addColumn('number', 'l_knee');
-        data.addColumn('number', 'r_foot');
-        data.addColumn('number', 'l_foot');
-        data.addColumn('number', 'r_heel');
-        data.addColumn('number', 'l_heel');
-        data.addRows(json);
-
-        var options = {
-          hAxis: {
-            title: 'Time'
-          },
-          vAxis: {
-            title: ''
-          }
-        };
-
-        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
-
-        chart.draw(data, options);
-      }
-    </script>
 </head>
 <body>
   <h2>Serving video files from Flask template</h2>
   <video width="1280" height="720" controls>
-    <source src={{ url_for('static', filename="output.webm") }} type="video/mp4">
+    <source src={{ url_for('download_file', filename="output.webm") }} type="video/webm">
     Your browser does not support the video tag.
   </video>
+    <p id="feedback"></p>
   <div id="chart_div"></div>
+  <script>
+    const feedback={{critique|tojson}}
+    //document.getElementById('feedback').innerHTML=feedback
+    let fb=''
+    if(feedback.r_elbow==false){
+      fb+="The angle of your right elbow is off.\n"
+    }
+    if(feedback.l_elbow==false){
+      fb+="The angle of your left elbow is off.\n"
+    }
+    if(feedback.l_elbow==false||feedback.r_elbow==false){
+      fb+="Try to keep it between 75 and 105 degrees bent.\n"
+    }
+    if(feedback.r_knee==false){
+      fb+="The angle of your right knee is off.\n"
+    }
+    if(feedback.l_knee==false){
+      fb+="The angle of your left knee is off.\n"
+    }
+    if(feedback.l_elbow==false||feedback.r_elbow==false){
+      fb+="Try to have it as close to straight as possible when contacting the ground.\n"
+    }
+    if(feedback.heel_strikes>0){
+      fb+="heel strikes: "+feedback.heel_strikes
+    }
+    document.getElementById('feedback').innerHTML=fb
+  </script>
+
 </body>
 </html>
 

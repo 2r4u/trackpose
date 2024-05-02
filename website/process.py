@@ -1,8 +1,11 @@
-import cv2, json
+import cv2 
 import mediapipe as mp
 import numpy as np
 from ast import literal_eval
 import pandas as pd
+import matplotlib
+matplotlib.use('agg')
+
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose
@@ -146,16 +149,28 @@ def process(source):
             usr_angles['r_knee'].append(r_angle_knee)
             usr_angles['l_knee'].append(l_angle_knee)
             usr_angles['r_foot'].append(
+                [
+                landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].x,
                 landmarks[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].y
+            ]
             )
             usr_angles['l_foot'].append(
+                [
+                landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].x,
                 landmarks[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].y
+            ]
             )
             usr_angles['r_heel'].append(
+                [
+                landmarks[mp_pose.PoseLandmark.RIGHT_HEEL.value].x,
                 landmarks[mp_pose.PoseLandmark.RIGHT_HEEL.value].y
+                ]
             )
             usr_angles['l_heel'].append(
+                [
+                landmarks[mp_pose.PoseLandmark.LEFT_HEEL.value].x,
                 landmarks[mp_pose.PoseLandmark.LEFT_HEEL.value].y
+                ]
             )
             #r_hip_angle = 180-r_angle_hip
             #l_hip_angle = 180-l_angle_hip
@@ -213,12 +228,60 @@ def process(source):
             break
         cap.release()
         out.release()
-      
     #save in dataframe, crop to video, save as csv (for comparison)
+
     df=pd.DataFrame(usr_angles)
-    idx_col=[i for i in range(len(df))]
-    df.insert(0, 'index', pd.Series(idx_col))
-    data=df.to_json(orient='values')
+    critique={
+            'r_elbow':False,
+            'l_elbow':False,
+            'heel_strikes':0,
+            'r_knee':True,
+            'l_knee':True
+            }
+    heel_strikes=0
+    el_angle_l=df.loc[:, 'l_elbow'].mean()
+    el_angle_r=df.loc[:, 'r_elbow'].mean()
+    if 75<=abs(el_angle_l)<=105:
+        critique['l_elbow']=True
+    if 75<=abs(el_angle_r)<=105:
+        critique['r_elbow']=True
+    rels=[]
+    epochs=[]
+    stride=[]
+    prev_rel=None
+    relation=None
+    for index, row in df.iterrows():
+        #print(row['c1'], row['c2'])        l_foot=ast.literal_eval(row['l_foot'])
+        relation=(row['l_foot'][0]<row['r_foot'][0])
+        rels.append(relation)
+        stride.append(min(row['l_foot'][1],row['r_foot'][1]))
+        #print(r_foot)
+        if index!=1:        
+            if prev_rel!=relation:
+                epochs.append(stride)
+                stride=[]
+        prev_rel=relation
+
+    flat=[j for sub in epochs for j in sub]
+    for row in epochs:
+        ov_index=flat.index(min(row))
+        if rels[ov_index]:
+            if 180-df.loc[ov_index,'r_knee']>40:
+                critique['r_knee']=False 
+            if df.loc[ov_index,'r_heel'][1]<min(row):
+                heel_strikes+=1
+        else:
+            if 180-df.loc[ov_index,'l_knee']>40:
+                critique['l_knee']=False
+            if df.loc[ov_index,'l_heel'][1]<min(row):
+                heel_strikes+=1
+    critique['heel_strikes']=heel_strikes
+    return critique
+    #fig=df.plot(use_index=True)
+    #fig.figure.savefig('./static/images/fig.png')
+    #idx_col=[i for i in range(len(df))]
+    #df.insert(0, 'index', pd.Series(idx_col))
+    #op=df.to_json(orient='values')
+    #return op
     
-    with open('data.json', 'w') as f:
-        json.dump(data, f)
+    

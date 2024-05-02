@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 import os
 from process import process
 
-app = Flask(__name__, static_folder='results')
+app = Flask(__name__)
 
 # Defines the upload folder
 UPLOAD_FOLDER = 'uploads'
+MEDIA_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # checks if the upload folder exists, if not, creates it
@@ -23,6 +24,11 @@ def index():
 def result():
     return render_template('result.html')
 
+@app.route('/results/<path:filename>')
+def download_file(filename):
+    return send_from_directory(MEDIA_FOLDER, filename, as_attachment=True)
+
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
   create_upload_folder()
@@ -35,9 +41,13 @@ def upload_file():
     filename = file.filename
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     # process uploaded file
-    process(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-    return redirect(url_for('result'))
+    try:
+        os.remove('./results/output.webm')
+    except:
+        pass
+    
+    crit=process(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    return render_template('result.html',critique=crit)
 
 
 if __name__ == '__main__':
